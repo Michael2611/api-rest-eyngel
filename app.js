@@ -2,7 +2,7 @@ var express = require('express');
 var port = process.port || 4201;
 var mongoose = require('mongoose');
 var bodyparser = require('body-parser');
-const { createServer } = require('http');
+const { createServer } = require('https');
 const { Server } = require('socket.io');
 
 require('dotenv').config();
@@ -11,7 +11,7 @@ var app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
     cors: {
-        origin: "https://192.168.20.168:4201/",
+        origin: "http://192.168.0.13:4201/",
         methods: ["GET", "POST"]
     }
 })
