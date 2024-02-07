@@ -11,7 +11,7 @@ var app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
     cors: {
-        origin: "http://localhost:4201",
+        origin: "http://192.168.20.168:4201/",
         methods: ["GET", "POST"]
     }
 })
@@ -86,6 +86,10 @@ mongoose.connect(process.env.ATLAS_URL)
         res.header('Allow', 'GET, PUT, POST, DELETE, OPTIONS');
         next();
     });
+
+app.get('/api/', function(req, res) {
+    res.json({ mensaje: '¡Hola Mundo!' })   
+});
 
 app.use('/api', usuario_routes);
 app.use('/api', post_routes);
