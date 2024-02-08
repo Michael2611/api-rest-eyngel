@@ -11,7 +11,7 @@ var app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
     cors: {
-        origin: "http://192.168.0.13:4201/",
+        origin: "http://localhost:4201/api",
         methods: ["GET", "POST"]
     }
 })

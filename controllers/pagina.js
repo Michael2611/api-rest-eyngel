@@ -6,6 +6,7 @@ var Post_like = require('../models/post_like');
 var Post_comment = require('../models/post_comments');
 var path = require('path');
 var fs = require('fs');
+var sharp = require('sharp');
 
 const AWS = require('aws-sdk'); //servicio s3
 
@@ -72,25 +73,36 @@ const actualizar_avatar_pagina = async function(req, res){
         var id = req.params['id'];
 
         var img = req.files.avatar_pag.path;
+        const imageNameWithoutExtension = path.parse(img).name;
+        const webpImg = imageNameWithoutExtension + '.webp';
+        
+        sharp(img)
+            .webp()
+            .toFile(webpImg, (err, info) => {
+                if(err){
+                        console.error('Error al convertir la imagen a WebP:', err);
+                        return res.status(500).json({ error: 'Failed to convert image to WebP' });
+                    }
+                    //fs.unlinkSync(img);
 
-        const rutaPagina = {
-            Bucket: process.env.AWS_BUCKET,
-            Key: "avatar/"+img.split('\\')[2],//ruta imagen,
-            Body: fs.createReadStream(img),
-            ACL: 'public-read', // Permite que los archivos sean públicos
-        }
+                    const rutaPagina = {
+                        Bucket: process.env.AWS_BUCKET,
+                        Key: "avatar/"+webpImg,//ruta imagen,
+                        Body: fs.createReadStream(webpImg),
+                        ACL: 'public-read', // Permite que los archivos sean públicos
+                    }
 
-        s3.upload(rutaPagina, (err, data) => {
-            if (err) {
-                console.error('Error uploading to S3:', err);
-                return res.status(500).json({ error: 'Failed to upload to S3' });
-            }
-            fs.unlinkSync(img);
-        });
-
+                    s3.upload(rutaPagina, (err, data) => {
+                        if (err) {
+                            console.error('Error uploading to S3:', err);
+                            return res.status(500).json({ error: 'Failed to upload to S3' });
+                        }
+                        fs.unlinkSync(img);
+                    });
+                })
         var pagina = await Pagina.findByIdAndUpdate({_id:id},
             {
-                avatar_pag: img.split('\\')[2]
+                avatar_pag: webpImg
             });
         res.status(200).send({data:pagina});
     }else{
@@ -114,26 +126,43 @@ const obtener_avatar_img_pagina = async function(req, res){
 const actualizar_portada_pagina = async function(req, res){
     if(req.user){
         var id = req.params['id'];
+
         var img = req.files.portada_pag.path;
+        const imageNameWithoutExtension = path.parse(img).name;
+        const webpImg = imageNameWithoutExtension + '.webp';
 
-        const rutaPagina = {
-            Bucket: process.env.AWS_BUCKET,
-            Key: "portadas/"+img.split('\\')[2],//ruta imagen,
-            Body: fs.createReadStream(img),
-            ACL: 'public-read', // Permite que los archivos sean públicos
-        }
+        sharp(img)
+                .webp()
+                .toFile(webpImg, (err, info) => {
+                    if(err){
+                        console.error('Error al convertir la imagen a WebP:', err);
+                        return res.status(500).json({ error: 'Failed to convert image to WebP' });
+                    }
+                    //fs.unlinkSync(img);
 
-        s3.upload(rutaPagina, (err, data) => {
-            if (err) {
-                console.error('Error uploading to S3:', err);
-                return res.status(500).json({ error: 'Failed to upload to S3' });
-            }
-            fs.unlinkSync(img);
-        });
+                    const rutaPagina = {
+                        Bucket: process.env.AWS_BUCKET,
+                        Key: "portadas/"+webpImg,//ruta imagen,
+                        Body: fs.createReadStream(img),
+                        ACL: 'public-read', // Permite que los archivos sean públicos
+                    }
+            
+                    s3.upload(rutaPagina, (err, data) => {
+                        if (err) {
+                            console.error('Error uploading to S3:', err);
+                            return res.status(500).json({ error: 'Failed to upload to S3' });
+                        }
+                        fs.unlinkSync(img);
+                    });
+
+
+                })
+
+        
 
         var pagina = await Pagina.findByIdAndUpdate({_id:id},
             {
-                portada_pag: img.split('\\')[2]
+                portada_pag: webpImg
             });
         res.status(200).send({data:pagina});
     }else{

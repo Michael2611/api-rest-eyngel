@@ -1,6 +1,8 @@
 var Canal = require('../models/canal');
 var Canal_chat = require('../models/canal_chat');
 var usuario_amigo = require('../models/usuario_amigo');
+
+const sharp = require('sharp');
 var path = require('path');
 var fs = require('fs');
 
@@ -20,29 +22,42 @@ const create_canal = async function(req, res){
         data.usuario_canal = req.user.sub;
 
         if (req.files && req.files.avatar_canal && req.files.avatar_canal.path) {
+            
             let img = req.files.avatar_canal.path;
-            let image_path = req.files.avatar_canal.path.split('\\')[3];
-            data.avatar_canal = image_path;
+            const imageNameWithoutExtension = path.parse(img).name;
+            const webpImg = imageNameWithoutExtension + '.webp';
+            data.avatar_canal = webpImg;
 
-            const rutaAvatarCanal = {
-                Bucket: process.env.AWS_BUCKET,
-                Key: "canales/avatar/"+img.split('\\')[3],//ruta imagen,
-                Body: fs.createReadStream(img),
-                ACL: 'public-read', // Permite que los archivos sean públicos
-            }
+            sharp(img)
+                .webp()
+                .toFile(webpImg, (err, info) => {
+                    if(err){
+                        console.error('Error al convertir la imagen a WebP:', err);
+                        return res.status(500).json({ error: 'Failed to convert image to WebP' });
+                    }
+                    //fs.unlinkSync(img);
 
-            s3.upload(rutaAvatarCanal, (err, data) => {
-                if (err) {
-                    console.error('Error uploading to S3:', err);
-                    return res.status(500).json({ error: 'Failed to upload to S3' });
-                }
-                fs.unlinkSync(img);
-            });
+                    const rutaAvatarCanal = {
+                        Bucket: process.env.AWS_BUCKET,
+                        Key: "canales/avatar/"+webpImg,//ruta imagen,
+                        Body: fs.createReadStream(webpImg),
+                        ACL: 'public-read', // Permite que los archivos sean públicos
+                    }
 
+                    s3.upload(rutaAvatarCanal, (err, data) => {
+                        if (err) {
+                            console.error('Error uploading to S3:', err);
+                            return res.status(500).json({ error: 'Failed to upload to S3' });
+                        }
+                        fs.unlinkSync(webpImg);
+                    });
+
+
+                })
+                let canal = await Canal.create(data);
+                res.status(200).send({data:canal});
         }
 
-        let canal = await Canal.create(data);
-        res.status(200).send({data:canal});
     } catch (error) {
         console.error(error);
         res.status(500).send({ error: 'Error en el servidor' });
@@ -176,7 +191,22 @@ const delete_canal = async function(req, res){
     if(req.user){
         let id = req.params['id'];
         const deletedCanal = await Canal.findByIdAndDelete(id);
+
         if(deletedCanal){
+
+            /*const params = {
+                Bucket: process.env.AWS_BUCKET,
+                Key: "canales/avatar/" + deletedCanal.avatar_canal,
+            };
+    
+            try {
+                const result = await s3.deleteObject(params).promise();
+                console.log('Successfully deleted:', result);
+                res.status(200).send({ message: 'Post deleted successfully', data: deletedCanal });
+            } catch (error) {
+                console.error('Error deleting object from S3:', error);
+                throw error;
+            }*/
             res.status(200).send({ message: 'Post deleted successfully', data: deletedCanal });
         }else{
             res.status(404).send({ message: 'Post not found' });
@@ -191,29 +221,41 @@ const create_chat_canal = async function(req, res){
     try {
         data.usuario = req.user.sub;
         if (req.files && req.files.media && req.files.media.path) {
+
             let img = req.files.media.path;
-            let image_path = req.files.media.path.split('\\')[3];
-            data.media = image_path;
+            const imageNameWithoutExtension = path.parse(img).name;
+            const webpImg = imageNameWithoutExtension + '.webp';
+            data.media = webpImg;
 
-            const rutaAvatarChat = {
-                Bucket: process.env.AWS_BUCKET,
-                Key: "canales/chat/"+img.split('\\')[3],//ruta imagen,
-                Body: fs.createReadStream(img),
-                ACL: 'public-read', // Permite que los archivos sean públicos
-            }
+            sharp(img)
+                .webp()
+                .toFile(webpImg, (err, info) => {
+                    if(err){
+                        console.error('Error al convertir la imagen a WebP:', err);
+                        return res.status(500).json({ error: 'Failed to convert image to WebP' });
+                    }
+                    //fs.unlinkSync(img);
 
-            s3.upload(rutaAvatarChat, (err, data) => {
-                if (err) {
-                    console.error('Error uploading to S3:', err);
-                    return res.status(500).json({ error: 'Failed to upload to S3' });
-                }
-                fs.unlinkSync(img);
-            });
+                    const rutaAvatarChat = {
+                        Bucket: process.env.AWS_BUCKET,
+                        Key: "canales/chat/"+webpImg,//ruta imagen,
+                        Body: fs.createReadStream(webpImg),
+                        ACL: 'public-read', // Permite que los archivos sean públicos
+                    }
 
+                    s3.upload(rutaAvatarChat, (err, data) => {
+                        if (err) {
+                            console.error('Error uploading to S3:', err);
+                            return res.status(500).json({ error: 'Failed to upload to S3' });
+                        }
+                        fs.unlinkSync(webpImg);
+                    });
+
+
+                })
+                let canal_chat = await Canal_chat.create(data);
+                res.status(200).send({data:canal_chat});
         }
-
-        let canal_chat = await Canal_chat.create(data);
-        res.status(200).send({data:canal_chat});
     } catch (error) {
         console.error(error);
         res.status(500).send({ error: 'Error en el servidor' });
